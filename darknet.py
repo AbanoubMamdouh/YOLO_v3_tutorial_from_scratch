@@ -110,7 +110,17 @@ def create_modules(blocks):
             if activation == "leaky":
                 activn = nn.LeakyReLU(0.1, inplace = True)
                 module.add_module("leaky_{0}".format(index), activn)
-        
+        #Add Maxpool layers
+        elif x["type"]=="maxpool":
+            kernel_size= int(x['size'])
+            stride=int(x['stride'])
+            maxpool=nn.MaxPool2d(kernel_size=kernel_size,stride=stride,padding=int((kernel_size-1)//2))
+            #for tiny Yolo implementation
+            if kernel_size==2 and stride==1:
+                module.add_module('ZeroPad2d',nn.ZeroPad2d((0,1,0,1)))
+                module.add_module('MaxPool2d',maxpool)
+            else:
+                module=maxpool
             #If it's an upsampling layer
             #We use Bilinear2dUpsampling
         elif (x["type"] == "upsample"):
@@ -178,7 +188,7 @@ class Darknet(nn.Module):
         for i, module in enumerate(modules):        
             module_type = (module["type"])
             
-            if module_type == "convolutional" or module_type == "upsample":
+            if module_type == "convolutional" or module_type == "upsample" or module_type=="maxpool":
                 x = self.module_list[i](x)
     
             elif module_type == "route":
